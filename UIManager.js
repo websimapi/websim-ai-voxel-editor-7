@@ -14,7 +14,7 @@ class UIManager {
 
         this.generateBtn.addEventListener('click', this.onGenerateClick.bind(this));
         
-        this.loadInitialTexture();
+        // this.loadInitialTexture(); // Moved to main.js to be awaited
     }
 
     setSaveManager(manager) {

@@ -31,9 +31,15 @@ class App {
         this.controls = new VoxelControls(this.camera, this.renderer.domElement, this.world, this.uiManager, this.saveManager);
         this.orbitControls = this.setupOrbitControls();
 
-        this.saveManager.load();
+        // this.saveManager.load(); // Will be moved to async init
 
         window.addEventListener('resize', this.onWindowResize.bind(this));
+        this.init();
+    }
+
+    async init() {
+        await this.uiManager.loadInitialTexture();
+        await this.saveManager.load();
         this.animate();
     }
 
