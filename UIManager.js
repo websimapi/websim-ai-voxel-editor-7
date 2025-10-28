@@ -1,0 +1,105 @@
+import * as THREE from 'three';
+
+class UIManager {
+    constructor(world) {
+        this.world = world;
+        this.promptInput = document.getElementById('texture-prompt');
+        this.generateBtn = document.getElementById('generate-texture-btn');
+        this.paletteContainer = document.getElementById('texture-palette');
+        this.loader = document.getElementById('loader');
+
+        this.materials = [];
+        this.activeMaterial = null;
+        this.saveManager = null;
+
+        this.generateBtn.addEventListener('click', this.onGenerateClick.bind(this));
+        
+        this.loadInitialTexture();
+    }
+
+    setSaveManager(manager) {
+        this.saveManager = manager;
+    }
+
+    async loadInitialTexture() {
+        this.showLoader();
+        const texture = await new THREE.TextureLoader().loadAsync('./default_texture.png');
+        this.addTextureToPalette(texture, false);
+        this.hideLoader();
+    }
+
+    async onGenerateClick() {
+        const prompt = this.promptInput.value;
+        if (!prompt) {
+            alert('Please enter a prompt for the texture.');
+            return;
+        }
+
+        this.showLoader();
+        try {
+            const fullPrompt = `8-bit retro pixel art, seamless, tileable texture, ${prompt}`;
+            const result = await websim.imageGen({
+                prompt: fullPrompt,
+                aspect_ratio: "1:1"
+            });
+            const texture = await new THREE.TextureLoader().loadAsync(result.url);
+            this.addTextureToPalette(texture);
+        } catch (error) {
+            console.error('Error generating texture:', error);
+            alert('Failed to generate texture. Please try again.');
+        } finally {
+            this.hideLoader();
+        }
+    }
+
+    addTextureToPalette(texture, markDirty = true) {
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.magFilter = THREE.NearestFilter;
+        texture.minFilter = THREE.NearestFilter;
+
+        const material = new THREE.MeshStandardMaterial({ map: texture });
+        this.materials.push(material);
+
+        const paletteItem = document.createElement('div');
+        paletteItem.className = 'palette-item';
+        paletteItem.style.backgroundImage = `url(${texture.image.src})`;
+        paletteItem.addEventListener('click', () => {
+            this.setActiveMaterial(material, paletteItem);
+        });
+
+        this.paletteContainer.appendChild(paletteItem);
+
+        if (!this.activeMaterial) {
+            this.setActiveMaterial(material, paletteItem);
+        }
+
+        if (markDirty && this.saveManager) {
+            this.saveManager.setDirty();
+        }
+    }
+
+    setActiveMaterial(material, selectedItem) {
+        this.activeMaterial = material;
+        document.querySelectorAll('.palette-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        selectedItem.classList.add('selected');
+    }
+
+    getActiveMaterial() {
+        return this.activeMaterial;
+    }
+
+    showLoader() {
+        this.loader.classList.remove('hidden');
+        this.generateBtn.disabled = true;
+    }
+
+    hideLoader() {
+        this.loader.classList.add('hidden');
+        this.generateBtn.disabled = false;
+    }
+}
+
+export default UIManager;
